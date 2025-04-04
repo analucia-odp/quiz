@@ -1,6 +1,12 @@
 import pytest
 from model import Question
 
+@pytest.fixture
+def data():
+    question = Question(title='q1')
+    question.add_choice('a', False)
+    question.add_choice('b', True)
+    return question
 
 def test_create_question():
     question = Question(title='q1')
@@ -53,54 +59,41 @@ def test_create_choice_with_long_text():
     with pytest.raises(Exception):
         question.add_choice('a'*101, False)
 
-def test_remove_choice_by_id():
-    question = Question(title='q1')
-    question.add_choice('a', False)
-    question.add_choice('b', True)
-    question.remove_choice_by_id(question.choices[0].id)
+def test_remove_choice_by_id(data):
+    data.remove_choice_by_id(data.choices[0].id)
 
-    assert len(question.choices) == 1
-    assert question.choices[0].text == 'b'
+    assert len(data.choices) == 1
+    assert data.choices[0].text == 'b'
 
-def test_remove_choice_by_id_not_found():
-    question = Question(title='q1')
-    question.add_choice('a', False)
-    question.add_choice('b', True)
-
+def test_remove_choice_with_inalid_id(data):
     with pytest.raises(Exception):
-        question.remove_choice_by_id('invalid_id')
+        data.remove_choice_by_id('invalid_id')
 
-def test_remove_all_choices():
-    question = Question(title='q1')
-    question.add_choice('a', False)
-    question.add_choice('b', True)
-    question.remove_all_choices()
+def test_remove_all_choices(data):
+    data.remove_all_choices()
 
-    assert len(question.choices) == 0
+    assert len(data.choices) == 0
 
-def test_select_choices():
-    question = Question(title='q1')
-    question.add_choice('a', False)
-    question.add_choice('b', True)
-
-    selected_choices = question.select_choices([question.choices[1].id])
+def test_select_choices(data):
+    selected_choices = data.select_choices([data.choices[1].id])
     assert len(selected_choices) == 1
-    assert selected_choices[0] == question.choices[1].id
+    assert selected_choices[0] == data.choices[1].id
 
-def test_select_choice_out_of_range():
-    question = Question(title='q1', max_selections=1)
-    question.add_choice('a', False)
-    question.add_choice('b', True)
-
+def test_select_choice_out_of_range(data):
     with pytest.raises(Exception):
-        question.select_choices([question.choices[0].id, question.choices[1].id])
+        data.select_choices([data.choices[0].id, data.choices[1].id])
 
-def test_set_correct_choice():
-    question = Question(title='q1')
-    question.add_choice('a', False)
-    question.add_choice('b', False)
+def test_set_correct_choice(data):
+    data.set_correct_choices([data.choices[0].id])
 
-    question.set_correct_choices([question.choices[1].id])
+    assert data.choices[1].is_correct == True
+    assert data.choices[0].is_correct == True
 
-    assert question.choices[1].is_correct == True
-    assert question.choices[0].is_correct == False
+def test_set_all_choices_as_correct(data):
+    data.set_correct_choices([choice.id for choice in data.choices])
+
+    assert all(choice.is_correct for choice in data.choices)
+
+def test_set_correct_choice_with_invalid_id(data):
+    with pytest.raises(Exception):
+        data.set_correct_choices(['invalid_id'])
